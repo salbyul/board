@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.study.board.mapper.CommentMapper">
+    <select id="findCommentsByBoardId" resultType="Comment">
+        SELECT comment_id AS commentId, writer, content, created_date AS generationTimestamp, board_id as boardId
+        FROM comment
+        WHERE board_id = #{boardId}
+    </select>
+</mapper>

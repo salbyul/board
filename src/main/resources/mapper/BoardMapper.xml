@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.study.board.mapper.BoardMapper">
+    <select id="findBoardByPaging" resultType="Board">
+        SELECT board_id as boardId, category_id as categoryId, writer, password, title, content, views, created_date as
+        generationTimestamp, modified_date as modificationTimestamp FROM board
+        <where>
+            <if test="startDate != null">
+                <![CDATA[
+                created_date >= #{startDate}
+                ]]>
+            </if>
+            <if test="endDate != null">
+                <![CDATA[
+                AND created_date <= #{endDate}
+                ]]>
+            </if>
+            <if test="search != null">
+                AND (title LIKE CONCAT('%', #{search}, '%') OR
+                writer LIKE CONCAT('%', #{search}, '%') OR
+                content LIKE CONCAT('%', #{search}, '%'))
+            </if>
+            <if test="category != null">
+                AND c.name = #{category}
+            </if>
+        </where>
+        ORDER BY created_date DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findAllCategory" resultType="Category">
+        SELECT name, category_id as categoryId
+        FROM category
+    </select>
+
+    <select id="countByPaging" resultType="Integer">
+        SELECT count(*) FROM board
+        <where>
+            <if test="startDate != null">
+                <![CDATA[
+                created_date >= #{startDate}
+                ]]>
+            </if>
+            <if test="endDate != null">
+                <![CDATA[
+                AND created_date <= #{endDate}
+                ]]>
+            </if>
+            <if test="search != null">
+                AND (title LIKE CONCAT('%', #{search}, '%') OR
+                writer LIKE CONCAT('%', #{search}, '%') OR
+                content LIKE CONCAT('%', #{search}, '%'))
+            </if>
+            <if test="category != null">
+                AND c.name = #{category}
+            </if>
+        </where>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findBoardByBoardId" resultType="Board">
+        SELECT board_id      AS boardId,
+               category_id   AS categoryId,
+               writer,
+               password,
+               title,
+               content,
+               views,
+               created_date  AS generationTimestamp,
+               modified_date AS modificationTimestamp
+        FROM board
+        WHERE board_id = #{boardId}
+    </select>
+
+    <select id="findCategoryByCategoryId" resultType="Category">
+        SELECT name, category_id AS categoryID
+        FROM category
+        WHERE category_id = #{categoryId}
+    </select>
+
+    <update id="plusOneViews">
+        UPDATE board
+        SET views = views + 1
+        WHERE board_id = #{boardId}
+    </update>
+</mapper>

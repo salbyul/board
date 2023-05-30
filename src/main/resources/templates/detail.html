@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Detail</title>
+</head>
+<body>
+<div class="w-7/12 mx-auto mt-20 h-screen">
+
+    <!--    제목-->
+    <div class="border-b-2 pb-3 mb-3">
+        <div class="flex justify-between text-sm text-gray-600 mb-5">
+            <div th:text="${boardDetailDTO.writer}">
+            </div>
+            <div th:if="${boardDetailDTO.modificationTimestamp == null}"
+                 th:text="|등록일시 ${#strings.substring(boardDetailDTO.generationTimestamp, 0, 10)} ${#strings.substring(boardDetailDTO.generationTimestamp, 11)}    수정일시 -|">
+            </div>
+            <div th:unless="${boardDetailDTO.modificationTimestamp == null}"
+                 th:text="|등록일시 ${#strings.substring(boardDetailDTO.generationTimestamp, 0, 10)} ${#strings.substring(boardDetailDTO.generationTimestamp, 11)}    수정일시 ${#strings.substring(boardDetailDTO.modificationTimestamp, 0, 10)} ${#strings.substring(boardDetailDTO.modificationTimestamp, 11)}|"></div>
+        </div>
+        <div class="flex justify-between text-gray-700">
+            <div class="flex">
+                <div class="mr-4" th:text="|[${boardDetailDTO.category}]|">
+                </div>
+                <div th:text="${boardDetailDTO.title}">
+                </div>
+            </div>
+            <div th:text="|조회수: ${boardDetailDTO.views}|">
+            </div>
+        </div>
+    </div>
+
+    <!--    내용-->
+    <div class="mb-3">
+        <div class="border pl-1 whitespace-pre-wrap" th:text="${boardDetailDTO.content}">
+        </div>
+        <!--            TODO FILE DOWNLOAD-->
+        <div>
+            <a th:each="fileName : ${boardDetailDTO.fileNames}" href="#" th:text="${fileName}">
+            </a>
+            <br/>
+        </div>
+    </div>
+
+    <!--    댓글-->
+    <div class="border-b pb-2 bg-gray-50 px-1">
+        <div>
+            <div class="border-b-2 pb-2 mb-2" th:each="commentDTO : ${boardDetailDTO.commentDetailDTOs}">
+                <div class="flex justify-between text-gray-600 text-xs">
+                    <div class="pl-3" th:text="${commentDTO.writer}">
+                    </div>
+                    <div class="pr-3"
+                         th:text="|${#strings.substring(commentDTO.generationTimestamp, 0, 10)} ${#strings.substring(commentDTO.generationTimestamp, 11)}|">
+                    </div>
+                </div>
+                <div class="pl-3" th:text="${commentDTO.content}">
+                </div>
+            </div>
+        </div>
+        <div>
+            <form method="post" id="commentForm" onsubmit="return verifyComment()" th:action="@{/comment/save(i=${param.i}, start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}">
+                <div>
+                    <div>
+                        <input type="text" placeholder="작성자" class="border pl-1 mb-1" name="writer" id="writer"/>
+                    </div>
+                    <div class="flex">
+                        <textarea class="resize-none border h-20 pl-1 w-11/12" name="content" id="content"></textarea>
+                        <input type="submit" value="등록" class="border w-1/12 h-20 rounded-sm hover:cursor-pointer"/>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="text-center mt-2">
+        <button class="px-3 py-1 border rounded-sm bg-gray-100" onclick="window.location.href = assembleParameter('/')">
+            목록
+        </button>
+        <button class="px-3 py-1 border rounded-sm" onclick="changeVisibilityPopup('modify')">수정</button>
+        <button class="px-3 py-1 border rounded-sm" onclick="changeVisibilityPopup('delete')">삭제</button>
+    </div>
+</div>
+
+<!--수정-->
+<div class="border fixed z-10 w-3/12 text-center top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 shadow-md bg-gray-50 invisible"
+     id="modify_popup">
+    <form method="post" action="" id="modifiedForm">
+        <h1 class="my-10">비밀번호 입력</h1>
+        <input type="password" placeholder="비밀번호를 입력해 주세요." class="pl-1 border w-5/12" name="password"/>
+        <br/>
+        <div class="flex justify-evenly my-10">
+            <button type="button" class="bg-gray-100 px-3 py-1" onclick="changeVisibilityPopup('modify')">취소</button>
+            <input type="submit" value="확인" class="px-3 py-1 bg-blue-100 hover:cursor-pointer"/>
+        </div>
+    </form>
+</div>
+
+<!--삭제-->
+<div class="border fixed z-10 w-3/12 text-center top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 shadow-md bg-gray-50 invisible"
+     id="delete_popup">
+    <form method="post" action="" id="deletedForm">
+        <h1 class="my-10">비밀번호 입력</h1>
+        <input type="password" placeholder="비밀번호를 입력해 주세요." class="pl-1 border w-5/12" name="password"/>
+        <br/>
+        <div class="flex justify-evenly my-10">
+            <button type="button" class="bg-gray-100 px-3 py-1" onclick="changeVisibilityPopup('delete')">취소</button>
+            <input type="submit" value="확인" class="px-3 py-1 bg-blue-100 hover:cursor-pointer"/>
+        </div>
+    </form>
+</div>
+</body>
+<script type="application/javascript">
+    const verifyComment = () => {
+        const writer = document.getElementById("writer");
+        const content = document.getElementById("content");
+        if (writer.value === null || writer.value === undefined || writer.value.length < 3 || writer.value.length > 4) {
+            alert("작성자는 3글자 이상, 5글자 미만이어야 합니다.");
+            return false;
+        }
+        if (content.value === null || content.value === undefined || content.value.length === 0) {
+            alert("내용을 입력해주세요.")
+            return false;
+        }
+        return true;
+    }
+</script>
+</html>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.study.board.mapper.FileMapper">
+    <select id="findFilesByBoardIds" resultType="File">
+        SELECT file_id as fileId, name, real_name as realName, board_id as boardId
+        FROM file
+        WHERE board_id IN
+        <foreach collection="boardIdList" item="boardId" index="index" open="(" close=")" separator=",">
+            #{boardId}
+        </foreach>
+    </select>
+
+    <select id="findFilesByBoardId" resultType="File">
+        SELECT file_id AS fileId, name, real_name AS realName, board_id AS boardID
+        FROM file
+        WHERE board_id = #{boardId}
+    </select>
+</mapper>
