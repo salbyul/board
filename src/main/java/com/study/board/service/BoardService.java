@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -28,7 +29,6 @@ public class BoardService {
     private final ModelMapper modelMapper;
     private final CommentMapper commentMapper;
 
-//    TODO Clean Code
 //    TODO file 유무 확인 로직 추가해야 함
     /**
      * 검색조건을 이용해 BoardListDTO를 만들어 리턴한다.
@@ -38,25 +38,23 @@ public class BoardService {
     public BoardDTO.BoardListDTO getBoardListDTO(SearchCondition searchCondition) {
         List<Board> boards = boardMapper.findBoardByPaging(searchCondition);
         List<Category> categories = boardMapper.findAllCategory();
-//        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = translateBoardListToBoardSmallList(boardList, categoryList, getFileListByBoardIdList(getBoardIdList(boardList)));
-        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = translateBoardListToBoardSmallList(boards, categories);
-
         Integer boardCounts = boardMapper.countByPaging(searchCondition);
+
+//        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = transformBoardListIntoBoardSmallList(boardList, categoryList, getFileListByBoardIdList(getBoardIdList(boardList)));
+        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = transformBoardListIntoBoardSmallList(boards, categories);
         return new BoardDTO.BoardListDTO(boardSmallDTOs, getCategoryNameList(categories), boardCounts);
     }
 
     /**
-     * boardId를 이용해 Board, Comment, Category 객체를 DB에서 받아 BoardDetailDTO 객체를 생성해 리턴한다.
+     * boardId를 이용해 Board 객체를 DB에서 받아 BoardDetailDTO 객체를 생성해 리턴한다.
      * @param boardId
      * @return
      */
     public BoardDTO.BoardDetailDTO getBoardDetailDTO(Long boardId) {
         Board board = boardMapper.findBoardByBoardId(boardId);
-        List<Comment> comments = commentMapper.findCommentsByBoardId(boardId);
-        List<File> files = fileMapper.findFilesByBoardId(boardId);
-        Category category = boardMapper.findCategoryByCategoryId(board.getCategoryId());
-
-        return assembleBoardDetailDTO(board, comments, category, files);
+        BoardDTO.BoardDetailDTO boardDetailDTO = modelMapper.map(board, BoardDTO.BoardDetailDTO.class);
+        addCommentsAndFilesAndCategory(board, boardDetailDTO);
+        return boardDetailDTO;
     }
 
     /**
@@ -67,26 +65,41 @@ public class BoardService {
         boardMapper.plusOneViews(boardId);
     }
 
-//    TODO Clean Code
     /**
-     * Board, Comment, Category 객체를 이용해 BoardDetailDTO 객체를 생성해 리턴한다.
+     * Board 객체를 이용해 BoardDetailDTO 객체의 Comments, FileNames, Category 속성의 값을 주입한다.
      * @param board
-     * @param comments
-     * @param category
+     * @param boardDetailDTO
+     */
+    private void addCommentsAndFilesAndCategory(Board board, BoardDTO.BoardDetailDTO boardDetailDTO) {
+        List<Comment> comments = commentMapper.findCommentsByBoardId(board.getBoardId());
+        List<File> files = fileMapper.findFilesByBoardId(board.getBoardId());
+        Category category = boardMapper.findCategoryByCategoryId(board.getCategoryId());
+
+        boardDetailDTO.assembleCategoryAndCommentsAndFileNames(category.getName(), transformCommentIntoCommentDetailDTO(comments), extractFileNamesFromFiles(files));
+    }
+
+    /**
+     * File List에서 RealName만 추출해 List로 리턴한다.
+     * @param files
      * @return
      */
-    private BoardDTO.BoardDetailDTO assembleBoardDetailDTO(Board board, List<Comment> comments, Category category, List<File> files) {
-        List<CommentDTO.CommentDetailDTO> commentDetailDTOs = new ArrayList<>();
-        comments.forEach(c -> commentDetailDTOs.add(modelMapper.map(c, CommentDTO.CommentDetailDTO.class)));
+    private List<String> extractFileNamesFromFiles(List<File> files) {
+        return files
+                .stream()
+                .map(File::getRealName)
+                .collect(Collectors.toList());
+    }
 
-        List<String> fileNames = new ArrayList<>();
-        files.forEach(f -> fileNames.add(f.getRealName()));
-
-        BoardDTO.BoardDetailDTO boardDetailDTO = modelMapper.map(board, BoardDTO.BoardDetailDTO.class);
-        boardDetailDTO.setCategory(category.getName());
-        boardDetailDTO.setCommentDetailDTOs(commentDetailDTOs);
-        boardDetailDTO.setFileNames(fileNames);
-        return boardDetailDTO;
+    /**
+     * Comment List를 CommentDetailDTO List로 만들어 리턴한다.
+     * @param comments
+     * @return
+     */
+    private List<CommentDTO.CommentDetailDTO> transformCommentIntoCommentDetailDTO(List<Comment> comments) {
+        return comments
+                .stream()
+                .map(c -> modelMapper.map(c, CommentDTO.CommentDetailDTO.class))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -95,9 +108,8 @@ public class BoardService {
      * @return
      */
     private List<String> getCategoryNameList(List<Category> categories) {
-        List<String> categoryNames = new ArrayList<>();
-        categories.forEach(c -> categoryNames.add(c.getName()));
-        return categoryNames;
+        return categories.stream().map(Category::getName)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -106,9 +118,8 @@ public class BoardService {
      * @return
      */
     private List<Long> getBoardIdList(List<Board> boards) {
-        List<Long> boardIds = new ArrayList<>();
-        boards.forEach(b -> boardIds.add(b.getBoardId()));
-        return boardIds;
+        return boards.stream().map(Board::getBoardId)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -121,7 +132,7 @@ public class BoardService {
      * @param files
      * @return
      */
-    private List<BoardDTO.BoardSmallDTO> translateBoardListToBoardSmallList(List<Board> boards, List<Category> categories, List<File> files) {
+    private List<BoardDTO.BoardSmallDTO> transformBoardListIntoBoardSmallList(List<Board> boards, List<Category> categories, List<File> files) {
         List<BoardDTO.BoardSmallDTO> boardSmallDTOs = new ArrayList<>();
 
         for (Board board : boards) {
@@ -133,15 +144,12 @@ public class BoardService {
         return boardSmallDTOs;
     }
 
-    private List<BoardDTO.BoardSmallDTO> translateBoardListToBoardSmallList(List<Board> boards, List<Category> categories) {
-        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = new ArrayList<>();
-
-        for (Board board : boards) {
+    private List<BoardDTO.BoardSmallDTO> transformBoardListIntoBoardSmallList(List<Board> boards, List<Category> categories) {
+        return boards.stream().map(board -> {
             BoardDTO.BoardSmallDTO boardSmall = modelMapper.map(board, BoardDTO.BoardSmallDTO.class);
             boardSmall.setCategory(findCategoryById(categories, board));
-            boardSmallDTOs.add(boardSmall);
-        }
-        return boardSmallDTOs;
+            return boardSmall;
+        }).collect(Collectors.toList());
     }
 
     /**

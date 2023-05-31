@@ -4,34 +4,29 @@
 
 <mapper namespace="com.study.board.mapper.BoardMapper">
     <select id="findBoardByPaging" resultType="Board">
-        SELECT board_id as boardId, category_id as categoryId, writer, password, title, content, views, created_date as
-        generationTimestamp, modified_date as modificationTimestamp FROM board
-        <where>
-            <if test="startDate != null">
-                <![CDATA[
-                created_date >= #{startDate}
-                ]]>
+        <![CDATA[
+        SELECT board_id AS boardId, category_id AS categoryId, writer, password, title, content, views, created_date as
+        generationTimestamp, modified_date AS modificationTimestamp FROM board
+        WHERE created_date >= #{startDate} AND created_date <= #{endDate}
+        ]]>
+        <if test="endDate != null">
+        </if>
+        <if test="search != null">
+            AND (title LIKE CONCAT('%', #{search}, '%') OR
+            writer LIKE CONCAT('%', #{search}, '%') OR
+            content LIKE CONCAT('%', #{search}, '%'))
+        </if>
+        <if test="category != null">
+            <if test="category != 'all'">
+                AND category_id = (SELECT category_id FROM category WHERE name = #{category})
             </if>
-            <if test="endDate != null">
-                <![CDATA[
-                AND created_date <= #{endDate}
-                ]]>
-            </if>
-            <if test="search != null">
-                AND (title LIKE CONCAT('%', #{search}, '%') OR
-                writer LIKE CONCAT('%', #{search}, '%') OR
-                content LIKE CONCAT('%', #{search}, '%'))
-            </if>
-            <if test="category != null">
-                AND c.name = #{category}
-            </if>
-        </where>
+        </if>
         ORDER BY created_date DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <select id="findAllCategory" resultType="Category">
-        SELECT name, category_id as categoryId
+        SELECT name, category_id AS categoryId
         FROM category
     </select>
 
@@ -54,7 +49,9 @@
                 content LIKE CONCAT('%', #{search}, '%'))
             </if>
             <if test="category != null">
-                AND c.name = #{category}
+                <if test="category != 'all'">
+                    AND category_id = (SELECT category_id FROM category WHERE name = #{category})
+                </if>
             </if>
         </where>
         LIMIT #{limit} OFFSET #{offset}

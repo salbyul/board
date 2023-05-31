@@ -10,18 +10,16 @@
 
 <!--    검색-->
     <div class="border mb-5 text-center">
-        <form method="get" action="">
+        <form method="get" th:action="@{/}">
             <div class="py-1">등록일
-                <input type="date" name="start_date" class="border mx-7" id="startDate"/> ~
-                <input type="date" name="end_date" class="border mx-7" id="endDate"/>
+                <input type="date" name="start_date" class="border mx-7" id="startDate" th:value="${param.start_date}"/> ~
+                <input type="date" name="end_date" class="border mx-7" id="endDate" th:value="${param.end_date}"/>
                 <select name="category" class="border p-1" id="category">
-                    <option value="all">전체 카테고리</option>
-                    <div th:each="category : ${boardListDTO.categoryList}">
-                    <option th:value="${category}" th:text="${category}">카테고리</option>
-                    </div>
+                    <option value="all" th:selected="${param.category} == 'all'">전체 카테고리</option>
+                    <option th:each="category : ${boardListDTO.categoryList}" th:value="${category}" th:text="${category}" th:selected="${#strings.equals(param.category, category)}">카테고리</option>
                 </select>
                 <input type="text" placeholder="검색어를 입력하세요. (제목 + 작성자 + 내용)" name="search" class="border pl-2 w-5/12"
-                       id="search"/>
+                       id="search" th:value="${param.search}"/>
                 <input type="submit" value="검색"
                        class="border rounded-sm bg-gray-100 px-5 duration-300 hover:duration-300 hover:bg-gray-200 hover:cursor-pointer"/>
             </div>
@@ -53,7 +51,7 @@
                     <td th:if="${boardSmall.hasFile}">O</td>
                     <td th:unless="${boardSmall.hasFile}"></td>
                     <td>
-                        <a th:href="@{/detail(i=${boardSmall.boardId}, start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}" th:text="${boardSmall.title}"></a>
+                        <a th:href="@{/detail(i=${boardSmall.boardId}, start_date=${param.start_date}, end_date=${param.end_date}, category=${param.category}, search=${param.search})}" th:text="${boardSmall.title}"></a>
                     </td>
                     <td th:text="${boardSmall.writer}">
                     </td>

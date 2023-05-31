@@ -73,7 +73,7 @@
         </div>
     </div>
     <div class="text-center mt-2">
-        <button class="px-3 py-1 border rounded-sm bg-gray-100" onclick="window.location.href = assembleParameter('/')">
+        <button class="px-3 py-1 border rounded-sm bg-gray-100" th:onclick="|window.location.href = '@{/(start_date=${param.start_date}, end_date=${param.end_date}, category=${param.category}, search=${param.search})}'|">
             목록
         </button>
         <button class="px-3 py-1 border rounded-sm" onclick="changeVisibilityPopup('modify')">수정</button>

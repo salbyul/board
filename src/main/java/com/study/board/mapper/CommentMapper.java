@@ -1,6 +1,7 @@
 package com.study.board.mapper;
 
 import com.study.board.domain.Comment;
+import com.study.board.dto.CommentDTO;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -14,4 +15,10 @@ public interface CommentMapper {
      * @return
      */
     List<Comment> findCommentsByBoardId(Long boardId);
+
+    /**
+     * CommentSaveDTO를 이용해 Comment를 저장한다.
+     * @param commentSaveDTO
+     */
+    void save(CommentDTO.CommentSaveDTO commentSaveDTO, Long boardId);
 }

@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.DateTimeException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.StringTokenizer;
@@ -14,11 +14,11 @@ public class RequestUtil {
 
     private final HttpServletRequest request;
 
-    private final int PAGE_DEFAULT_VALUE = 0;
+    private final int OFFSET_DEFAULT_VALUE = 0;
 
-    private final LocalDate START_DATE_DEFAULT_VALUE = LocalDate.of(2023, 1, 1);
+    private final LocalDateTime START_DATE_DEFAULT_VALUE = LocalDateTime.of(2023, 1, 1, 0, 0);
 
-    private final LocalDate END_DATE_DEFAULT_VALUE = LocalDate.now();
+    private final LocalDateTime END_DATE_DEFAULT_VALUE = LocalDateTime.now();
 
     /**
      * key를 이용해 HttpServletRequest에서 값을 찾아 리턴한다.
@@ -37,9 +37,9 @@ public class RequestUtil {
      * 기본값은 0이다.
      * @return
      */
-    public Integer getPage() {
+    public Integer getOffset() {
         Optional<String> page = Optional.ofNullable(request.getParameter("page"));
-        return page.map(Integer::parseInt).orElse(PAGE_DEFAULT_VALUE);
+        return page.map(Integer::parseInt).orElse(OFFSET_DEFAULT_VALUE);
     }
 
     /**
@@ -47,9 +47,9 @@ public class RequestUtil {
      * 기본값은 '2023-01-01'이다.
      * @return
      */
-    public LocalDate getStartDate() {
+    public LocalDateTime getStartDate() {
         Optional<String> startDate = Optional.ofNullable(request.getParameter("start_date"));
-        startDate.ifPresent(this::translateStringToLocalDate);
+        if (startDate.isPresent() && !startDate.get().equals("")) return translateStringToLocalDateTime(startDate.get());
         return START_DATE_DEFAULT_VALUE;
     }
 
@@ -58,9 +58,9 @@ public class RequestUtil {
      * 기본 값은 현재 날짜이다.
      * @return
      */
-    public LocalDate getEndDate() {
+    public LocalDateTime getEndDate() {
         Optional<String> endDate = Optional.ofNullable(request.getParameter("end_date"));
-        endDate.ifPresent(this::translateStringToLocalDate);
+        if (endDate.isPresent() && !endDate.get().equals("")) return translateStringToLocalDateTime(endDate.get());
         return END_DATE_DEFAULT_VALUE;
     }
 
@@ -71,7 +71,8 @@ public class RequestUtil {
      */
     public String getCategory() {
         Optional<String> category = Optional.ofNullable(request.getParameter("category"));
-        return category.orElse(null);
+        if (category.isEmpty() || category.get().equals("")) return null;
+        return category.get();
     }
 
     /**
@@ -81,7 +82,8 @@ public class RequestUtil {
      */
     public String getSearch() {
         Optional<String> search = Optional.ofNullable(request.getParameter("search"));
-        return search.orElse(null);
+        if (search.isEmpty() || search.get().equals("")) return null;
+        return search.get();
     }
 
     /**
@@ -90,16 +92,16 @@ public class RequestUtil {
      * @param date
      * @return
      */
-    private LocalDate translateStringToLocalDate(String date) {
+    private LocalDateTime translateStringToLocalDateTime(String date) {
         StringTokenizer stringTokenizer = new StringTokenizer(date, "-");
         int year, month, day;
-        LocalDate result;
+        LocalDateTime result;
 
         try {
             year = Integer.parseInt(stringTokenizer.nextToken());
             month = Integer.parseInt(stringTokenizer.nextToken());
             day = Integer.parseInt(stringTokenizer.nextToken());
-            result = LocalDate.of(year, month, day);
+            result = LocalDateTime.of(year, month, day, 0, 0);
         } catch (NoSuchElementException | NumberFormatException | DateTimeException e) {
 //            올바르지 않은 형식의 String을 받은 경우 null 리턴
             return null;

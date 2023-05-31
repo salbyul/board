@@ -32,7 +32,6 @@ public class BoardController {
      */
     @GetMapping("/")
     public String index(HttpServletRequest request, Model model) {
-
         BoardListDTO boardListDTO = boardService.getBoardListDTO(getSearchCondition(request));
         model.addAttribute(BOARD_LIST_DTO, boardListDTO);
         return "index";
@@ -62,11 +61,12 @@ public class BoardController {
     private SearchCondition getSearchCondition(HttpServletRequest request) {
         RequestUtil requestUtil = new RequestUtil(request);
 
-        return new SearchCondition(requestUtil.getPage(),
-                requestUtil.getStartDate(),
-                requestUtil.getEndDate(),
-                requestUtil.getCategory(),
-                requestUtil.getSearch(),
-                10);
+        return SearchCondition.builder()
+                .startDate(requestUtil.getStartDate())
+                .endDate(requestUtil.getEndDate())
+                .category(requestUtil.getCategory())
+                .search(requestUtil.getSearch())
+                .offset(requestUtil.getOffset())
+                .limit(10).build();
     }
 }

@@ -1,9 +1,6 @@
 package com.study.board.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,7 +51,6 @@ public abstract class BoardDTO {
     @Setter
     @NoArgsConstructor
     public static class BoardDetailDTO extends BoardDTO {
-        private String boardId;
         private String category;
         private String title;
         private String writer;
@@ -65,15 +61,9 @@ public abstract class BoardDTO {
         private List<CommentDTO.CommentDetailDTO> commentDetailDTOs;
         private List<String> fileNames;
 
-        public void setCategory(String category) {
+        public void assembleCategoryAndCommentsAndFileNames(String category, List<CommentDTO.CommentDetailDTO> commentDetailDTOs, List<String> fileNames) {
             this.category = category;
-        }
-
-        public void setCommentDetailDTOs(List<CommentDTO.CommentDetailDTO> commentDetailDTOs) {
             this.commentDetailDTOs = commentDetailDTOs;
-        }
-
-        public void setFileNames(List<String> fileNames) {
             this.fileNames = fileNames;
         }
     }

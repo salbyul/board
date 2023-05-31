@@ -8,4 +8,9 @@
         FROM comment
         WHERE board_id = #{boardId}
     </select>
+
+    <insert id="save">
+        INSERT INTO comment (writer, content, created_date, board_id)
+        VALUES (#{commentSaveDTO.writer}, #{commentSaveDTO.content}, #{commentSaveDTO.generationTimestamp}, #{boardId});
+    </insert>
 </mapper>
