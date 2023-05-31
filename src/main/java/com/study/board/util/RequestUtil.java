@@ -4,9 +4,8 @@ import lombok.RequiredArgsConstructor;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.DateTimeException;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.StringTokenizer;
 
 @RequiredArgsConstructor
@@ -14,23 +13,15 @@ public class RequestUtil {
 
     private final HttpServletRequest request;
 
+    private final String START_DATE = "start_date";
+    private final String END_DATE = "end_date";
+    private final String CATEGORY = "category";
+    private final String SEARCH = "search";
+    private final String PAGE = "page";
+
     private final int OFFSET_DEFAULT_VALUE = 0;
-
-    private final LocalDateTime START_DATE_DEFAULT_VALUE = LocalDateTime.of(2023, 1, 1, 0, 0);
-
-    private final LocalDateTime END_DATE_DEFAULT_VALUE = LocalDateTime.now();
-
-    /**
-     * key를 이용해 HttpServletRequest에서 값을 찾아 리턴한다.
-     * 만약, 값이 존재하지 않는다면 defaultValue를 리턴한다.
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    public String getParameter(String key, String defaultValue) {
-        Optional<String> parameter = Optional.ofNullable(request.getParameter(key));
-        return parameter.orElse(defaultValue);
-    }
+    private final LocalDate START_DATE_DEFAULT_VALUE = LocalDate.now().minusYears(1);
+    private final LocalDate END_DATE_DEFAULT_VALUE = LocalDate.now();
 
     /**
      * HttpServletRequest의 파라미터 중 'page' key값을 찾아내어 value값을 리턴한다.
@@ -38,19 +29,26 @@ public class RequestUtil {
      * @return
      */
     public Integer getOffset() {
-        Optional<String> page = Optional.ofNullable(request.getParameter("page"));
-        return page.map(Integer::parseInt).orElse(OFFSET_DEFAULT_VALUE);
+        try {
+            return Integer.parseInt(request.getParameter(PAGE));
+        } catch (Exception e) {
+//            예외 발생 시 기본 값을 리턴한다.
+            return OFFSET_DEFAULT_VALUE;
+        }
     }
 
     /**
-     * HttpServletRequest의 파라미터 중 'start_date' key값을 찾아내어 value값을 리턴한다.
-     * 기본값은 '2023-01-01'이다.
+     * HttpServletRequest의 파라미터 중 'start_date' key값을 찾아내어 LocalDate 객체로 변환 후 리턴한다.
+     * 기본 값은 현재로부터 1년 전의 날짜이다.
      * @return
      */
-    public LocalDateTime getStartDate() {
-        Optional<String> startDate = Optional.ofNullable(request.getParameter("start_date"));
-        if (startDate.isPresent() && !startDate.get().equals("")) return translateStringToLocalDateTime(startDate.get());
-        return START_DATE_DEFAULT_VALUE;
+    public LocalDate getStartDate() {
+        try {
+            return transformStringIntoLocalDate(request.getParameter(START_DATE));
+        } catch (Exception e) {
+//            올바르지 않은 형식의 String 값이 들어오면 기본값이 리턴된다.
+            return START_DATE_DEFAULT_VALUE;
+        }
     }
 
     /**
@@ -58,55 +56,52 @@ public class RequestUtil {
      * 기본 값은 현재 날짜이다.
      * @return
      */
-    public LocalDateTime getEndDate() {
-        Optional<String> endDate = Optional.ofNullable(request.getParameter("end_date"));
-        if (endDate.isPresent() && !endDate.get().equals("")) return translateStringToLocalDateTime(endDate.get());
-        return END_DATE_DEFAULT_VALUE;
+    public LocalDate getEndDate() {
+        try {
+            return transformStringIntoLocalDate(request.getParameter(END_DATE));
+        } catch (Exception e) {
+//            올바르지 않은 형식의 String 값이 들어오면 기본값이 리턴된다.
+            return END_DATE_DEFAULT_VALUE;
+        }
     }
 
     /**
      * HttpServletRequest의 파라미터 중 'category' key값을 찾아내어 value값을 리턴한다.
-     * 기본 값은 null이다.
      * @return
      */
     public String getCategory() {
-        Optional<String> category = Optional.ofNullable(request.getParameter("category"));
-        if (category.isEmpty() || category.get().equals("")) return null;
-        return category.get();
+        String category = request.getParameter(CATEGORY);
+        if (isEmpty(category)) return null;
+        return category;
     }
 
     /**
      * HttpServletRequest의 파라미터 중 'search' key값을 찾아내어 value값을 리턴한다.
-     * 기본 값은 null이다.
      * @return
      */
     public String getSearch() {
-        Optional<String> search = Optional.ofNullable(request.getParameter("search"));
-        if (search.isEmpty() || search.get().equals("")) return null;
-        return search.get();
+        return request.getParameter(SEARCH);
     }
 
     /**
      * NNNN-NN-NN 형식의 String을 받아 LocalDate객체로 변환 후 리턴한다.
-     * 만약 올바르지 않은 형식의 String을 받게 되면 null을 리턴한다.
      * @param date
      * @return
      */
-    private LocalDateTime translateStringToLocalDateTime(String date) {
+    private LocalDate transformStringIntoLocalDate(String date) throws NoSuchElementException, NumberFormatException, DateTimeException {
         StringTokenizer stringTokenizer = new StringTokenizer(date, "-");
-        int year, month, day;
-        LocalDateTime result;
+        int year = Integer.parseInt(stringTokenizer.nextToken());
+        int month = Integer.parseInt(stringTokenizer.nextToken());
+        int day = Integer.parseInt(stringTokenizer.nextToken());
+        return LocalDate.of(year, month, day);
+    }
 
-        try {
-            year = Integer.parseInt(stringTokenizer.nextToken());
-            month = Integer.parseInt(stringTokenizer.nextToken());
-            day = Integer.parseInt(stringTokenizer.nextToken());
-            result = LocalDateTime.of(year, month, day, 0, 0);
-        } catch (NoSuchElementException | NumberFormatException | DateTimeException e) {
-//            올바르지 않은 형식의 String을 받은 경우 null 리턴
-            return null;
-        }
-
-        return result;
+    /**
+     * Category가 null이거나 빈 문자열이면 false를 리턴한다.
+     * @param category
+     * @return
+     */
+    private boolean isEmpty(String category) {
+        return category == null || category.equals("");
     }
 }

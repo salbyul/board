@@ -52,8 +52,9 @@ public class BoardService {
      */
     public BoardDTO.BoardDetailDTO getBoardDetailDTO(Long boardId) {
         Board board = boardMapper.findBoardByBoardId(boardId);
-        BoardDTO.BoardDetailDTO boardDetailDTO = modelMapper.map(board, BoardDTO.BoardDetailDTO.class);
-        addCommentsAndFilesAndCategory(board, boardDetailDTO);
+        BoardDTO.BoardDetailDTO boardDetailDTO = transformBoardIntoBoardDetailDTO(board);
+//        TODO Clean Code
+        addCommentsAndFilesAndCategoryToBoardDetailDTO(board, boardDetailDTO);
         return boardDetailDTO;
     }
 
@@ -66,11 +67,20 @@ public class BoardService {
     }
 
     /**
+     * Board 객체를 이용해 BoardDetailDTO 객체를 생성해 리턴한다.
+     * @param board
+     * @return
+     */
+    private BoardDTO.BoardDetailDTO transformBoardIntoBoardDetailDTO(Board board) {
+        return modelMapper.map(board, BoardDTO.BoardDetailDTO.class);
+    }
+
+    /**
      * Board 객체를 이용해 BoardDetailDTO 객체의 Comments, FileNames, Category 속성의 값을 주입한다.
      * @param board
      * @param boardDetailDTO
      */
-    private void addCommentsAndFilesAndCategory(Board board, BoardDTO.BoardDetailDTO boardDetailDTO) {
+    private void addCommentsAndFilesAndCategoryToBoardDetailDTO(Board board, BoardDTO.BoardDetailDTO boardDetailDTO) {
         List<Comment> comments = commentMapper.findCommentsByBoardId(board.getBoardId());
         List<File> files = fileMapper.findFilesByBoardId(board.getBoardId());
         Category category = boardMapper.findCategoryByCategoryId(board.getCategoryId());

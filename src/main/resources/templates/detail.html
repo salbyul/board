@@ -59,7 +59,8 @@
             </div>
         </div>
         <div>
-            <form method="post" id="commentForm" onsubmit="return verifyComment()" th:action="@{/comment/save(i=${param.i}, start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}">
+            <form method="post" id="commentForm" onsubmit="return verifyComment()"
+                  th:action="@{/comment/save(i=${param.i}, start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}">
                 <div>
                     <div>
                         <input type="text" placeholder="작성자" class="border pl-1 mb-1" name="writer" id="writer"/>
@@ -73,7 +74,8 @@
         </div>
     </div>
     <div class="text-center mt-2">
-        <button class="px-3 py-1 border rounded-sm bg-gray-100" th:onclick="|window.location.href = '@{/(start_date=${param.start_date}, end_date=${param.end_date}, category=${param.category}, search=${param.search})}'|">
+        <button class="px-3 py-1 border rounded-sm bg-gray-100"
+                th:onclick="|window.location.href = '@{/(start_date=${param.start_date}, end_date=${param.end_date}, category=${param.category}, search=${param.search})}'|">
             목록
         </button>
         <button class="px-3 py-1 border rounded-sm" onclick="changeVisibilityPopup('modify')">수정</button>

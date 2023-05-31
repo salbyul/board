@@ -8,15 +8,18 @@
 <body>
 <div class="mx-auto mt-20 w-7/12">
 
-<!--    검색-->
+    <!--    검색-->
     <div class="border mb-5 text-center">
         <form method="get" th:action="@{/}">
             <div class="py-1">등록일
-                <input type="date" name="start_date" class="border mx-7" id="startDate" th:value="${param.start_date}"/> ~
+                <input type="date" name="start_date" class="border mx-7" id="startDate" th:value="${param.start_date}"/>
+                ~
                 <input type="date" name="end_date" class="border mx-7" id="endDate" th:value="${param.end_date}"/>
                 <select name="category" class="border p-1" id="category">
                     <option value="all" th:selected="${param.category} == 'all'">전체 카테고리</option>
-                    <option th:each="category : ${boardListDTO.categoryList}" th:value="${category}" th:text="${category}" th:selected="${#strings.equals(param.category, category)}">카테고리</option>
+                    <option th:each="category : ${boardListDTO.categoryList}" th:value="${category}"
+                            th:text="${category}" th:selected="${#strings.equals(param.category, category)}">카테고리
+                    </option>
                 </select>
                 <input type="text" placeholder="검색어를 입력하세요. (제목 + 작성자 + 내용)" name="search" class="border pl-2 w-5/12"
                        id="search" th:value="${param.search}"/>
@@ -27,7 +30,7 @@
     </div>
     <br/>
 
-<!--    글 목록-->
+    <!--    글 목록-->
     <div>
         <div th:text="|총 ${boardListDTO.boardCounts}건|">게시글 수</div>
         <br/>
@@ -51,7 +54,8 @@
                     <td th:if="${boardSmall.hasFile}">O</td>
                     <td th:unless="${boardSmall.hasFile}"></td>
                     <td>
-                        <a th:href="@{/detail(i=${boardSmall.boardId}, start_date=${param.start_date}, end_date=${param.end_date}, category=${param.category}, search=${param.search})}" th:text="${boardSmall.title}"></a>
+                        <a th:href="@{/detail(i=${boardSmall.boardId}, start_date=${param.start_date}, end_date=${param.end_date}, category=${param.category}, search=${param.search})}"
+                           th:text="${boardSmall.title}"></a>
                     </td>
                     <td th:text="${boardSmall.writer}">
                     </td>
@@ -60,7 +64,8 @@
                     <td th:text="|${#strings.substring(boardSmall.generationTimestamp, 0, 10)} ${#strings.substring(boardSmall.generationTimestamp, 11)}|">
                     </td>
                     <td th:if="${boardSmall.modificationTimestamp == null}">-</td>
-                    <td th:unless="${boardSmall.modificationTimestamp == null}" th:text="|${#strings.substring(boardSmall.modificationTimestamp, 0, 10)} ${#strings.substring(boardSmall.modificationTimestamp, 11)}|">
+                    <td th:unless="${boardSmall.modificationTimestamp == null}"
+                        th:text="|${#strings.substring(boardSmall.modificationTimestamp, 0, 10)} ${#strings.substring(boardSmall.modificationTimestamp, 11)}|">
                     </td>
                 </tr>
                 </tbody>
@@ -70,28 +75,28 @@
 
     <br/>
 
-<!--    <%&#45;&#45;    <div class="bg-red-100 text-center my-16 flex w-5/12 mx-auto">&#45;&#45;%>-->
-<!--    <%&#45;&#45;        <div class="w-content mx-auto">&#45;&#45;%>-->
-<!--        <%&#45;&#45;        <button class="mx-3"><<</button>&#45;&#45;%>-->
-<!--        <%&#45;&#45;        <button class="mx-3"><</button>&#45;&#45;%>-->
-<!--        <%&#45;&#45;        &lt;%&ndash;%>-->
-<!--        <%&#45;&#45;            PagingDto pagingDto = boardList.getPagingDto();&#45;&#45;%>-->
-<!--        <%&#45;&#45;            for (int i = pagingDto.getFirstPage(); i <= pagingDto.getLastPage(); i++) {&#45;&#45;%>-->
-<!--        <%&#45;&#45;                %>&#45;&#45;%>-->
-<!--        <%&#45;&#45;        <button class="ml-1"><%=i%></button>&#45;&#45;%>-->
-<!--        <%&#45;&#45;        &lt;%&ndash;%>-->
-<!--        <%&#45;&#45;            }&#45;&#45;%>-->
-<!--        <%&#45;&#45;        %>&#45;&#45;%>-->
-<!--        <%&#45;&#45;        <button class="mx-3">></button>&#45;&#45;%>-->
-<!--        <%&#45;&#45;        <button class="mx-3">>></button>&#45;&#45;%>-->
-<!--        <%&#45;&#45;        </div>&#45;&#45;%>-->
-<!--    <%&#45;&#45;    </div>&#45;&#45;%>-->
+    <!--    <%&#45;&#45;    <div class="bg-red-100 text-center my-16 flex w-5/12 mx-auto">&#45;&#45;%>-->
+    <!--    <%&#45;&#45;        <div class="w-content mx-auto">&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        <button class="mx-3"><<</button>&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        <button class="mx-3"><</button>&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        &lt;%&ndash;%>-->
+    <!--        <%&#45;&#45;            PagingDto pagingDto = boardList.getPagingDto();&#45;&#45;%>-->
+    <!--        <%&#45;&#45;            for (int i = pagingDto.getFirstPage(); i <= pagingDto.getLastPage(); i++) {&#45;&#45;%>-->
+    <!--        <%&#45;&#45;                %>&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        <button class="ml-1"><%=i%></button>&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        &lt;%&ndash;%>-->
+    <!--        <%&#45;&#45;            }&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        %>&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        <button class="mx-3">></button>&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        <button class="mx-3">>></button>&#45;&#45;%>-->
+    <!--        <%&#45;&#45;        </div>&#45;&#45;%>-->
+    <!--    <%&#45;&#45;    </div>&#45;&#45;%>-->
 
-<!--    <br/>-->
+    <!--    <br/>-->
 
     <div class="flex justify-end">
         <a th:href="@{/create(start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}"
-                class="px-5 bg-gray-200 rounded-sm duration-300 hover:duration-300 hover:bg-gray-300">등록
+           class="px-5 bg-gray-200 rounded-sm duration-300 hover:duration-300 hover:bg-gray-300">등록
         </a>
     </div>
 </div>
