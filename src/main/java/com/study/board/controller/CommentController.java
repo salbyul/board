@@ -24,6 +24,7 @@ public class CommentController {
     /**
      * 게시글의 Detail을 표현할 페이지와 연결된다.
      * Post요청으로 CommentSaveDTO를 받아 DB에 저장시킨후 Detail 페이지로 이동한다.
+     *
      * @param commentSaveDTO
      * @param boardId
      * @param model

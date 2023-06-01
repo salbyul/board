@@ -17,4 +17,10 @@
         FROM file
         WHERE board_id = #{boardId}
     </select>
+
+    <select id="findFileByRealName" resultType="File">
+        SELECT file_id AS fileId, name, real_name AS realName, board_id AS boardId
+        FROM file
+        WHERE real_name = #{fileName }
+    </select>
 </mapper>

@@ -36,4 +36,9 @@ public class WebConfig implements WebMvcConfigurer {
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         return modelMapper;
     }
+
+    @Bean
+    public SHA256Encoder SHA256Encoder() {
+        return new SHA256Encoder();
+    }
 }

@@ -35,9 +35,9 @@
     <div class="mb-3">
         <div class="border pl-1 whitespace-pre-wrap" th:text="${boardDetailDTO.content}">
         </div>
-        <!--            TODO FILE DOWNLOAD-->
         <div>
-            <a th:each="fileName : ${boardDetailDTO.fileNames}" href="#" th:text="${fileName}">
+            <a th:each="fileName : ${boardDetailDTO.fileNames}" th:href="@{/download(file_name=${fileName})}"
+               th:text="${fileName}" class="block">
             </a>
             <br/>
         </div>
@@ -100,7 +100,7 @@
 <!--삭제-->
 <div class="border fixed z-10 w-3/12 text-center top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 shadow-md bg-gray-50 invisible"
      id="delete_popup">
-    <form method="post" action="" id="deletedForm">
+    <form method="post" th:action="@{/delete(i=${param.i}, start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}" id="deletedForm">
         <h1 class="my-10">비밀번호 입력</h1>
         <input type="password" placeholder="비밀번호를 입력해 주세요." class="pl-1 border w-5/12" name="password"/>
         <br/>
@@ -112,6 +112,21 @@
 </div>
 </body>
 <script type="application/javascript">
+    window.onload = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('error')) {
+            let error = urlParams.get('error');
+            if (error === 'modify') {
+                const modifyPopup = document.getElementById('modify_popup');
+                modifyPopup.style.visibility = 'visible';
+                alert('비밀번호가 틀렸습니다.');
+            } else if (error === 'delete') {
+                const deletePopup = document.getElementById('delete_popup');
+                deletePopup.style.visibility = 'visible';
+                alert('비밀번호가 틀렸습니다.');
+            }
+        }
+    }
     const verifyComment = () => {
         const writer = document.getElementById("writer");
         const content = document.getElementById("content");
@@ -124,6 +139,30 @@
             return false;
         }
         return true;
+    }
+
+    const changeVisibilityPopup = (btn) => {
+        const modifyPopup = document.getElementById("modify_popup");
+        const deletePopup = document.getElementById("delete_popup");
+        if (btn === 'modify') {
+            const visibility = modifyPopup.style.visibility;
+            console.log(visibility);
+            if (visibility === 'visible') {
+                modifyPopup.style.visibility = 'hidden';
+            } else {
+                deletePopup.style.visibility = 'hidden';
+                modifyPopup.style.visibility = 'visible';
+            }
+        } else if (btn === 'delete') {
+            const visibility = deletePopup.style.visibility;
+            console.log(visibility);
+            if (visibility === 'visible') {
+                deletePopup.style.visibility = 'hidden';
+            } else {
+                modifyPopup.style.visibility = 'hidden';
+                deletePopup.style.visibility = 'visible';
+            }
+        }
     }
 </script>
 </html>

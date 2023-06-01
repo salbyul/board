@@ -1,5 +1,7 @@
 package com.study.board.service;
 
+import com.study.board.SHA256Encoder;
+import com.study.board.controller.BoardControllerAdvice;
 import com.study.board.domain.Board;
 import com.study.board.domain.Category;
 import com.study.board.domain.Comment;
@@ -15,9 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.study.board.controller.BoardControllerAdvice.*;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -28,10 +33,13 @@ public class BoardService {
     private final FileMapper fileMapper;
     private final ModelMapper modelMapper;
     private final CommentMapper commentMapper;
+    private final SHA256Encoder sha256Encoder;
 
 //    TODO file 유무 확인 로직 추가해야 함
+
     /**
      * 검색조건을 이용해 BoardListDTO를 만들어 리턴한다.
+     *
      * @param searchCondition
      * @return
      */
@@ -47,27 +55,40 @@ public class BoardService {
 
     /**
      * boardId를 이용해 Board 객체를 DB에서 받아 BoardDetailDTO 객체를 생성해 리턴한다.
+     *
      * @param boardId
      * @return
      */
     public BoardDTO.BoardDetailDTO getBoardDetailDTO(Long boardId) {
         Board board = boardMapper.findBoardByBoardId(boardId);
         BoardDTO.BoardDetailDTO boardDetailDTO = transformBoardIntoBoardDetailDTO(board);
-//        TODO Clean Code
-        addCommentsAndFilesAndCategoryToBoardDetailDTO(board, boardDetailDTO);
+
+        List<Comment> comments = commentMapper.findCommentsByBoardId(boardId);
+        List<File> files = fileMapper.findFilesByBoardId(boardId);
+        Category category = boardMapper.findCategoryByCategoryId(board.getCategoryId());
+        boardDetailDTO.assembleCategoryAndCommentsAndFileNames(category.getName(), transformCommentIntoCommentDetailDTO(comments), extractFileNamesFromFiles(files));
         return boardDetailDTO;
     }
 
     /**
      * Board의 views를 1 올린다.
+     *
      * @param boardId
      */
     public void updateViews(Long boardId) {
         boardMapper.plusOneViews(boardId);
     }
 
+    public void deleteBoard(Long boardId, String password) throws NoSuchAlgorithmException {
+        String encryptedPassword = sha256Encoder.encrypt(password);
+        Board board = boardMapper.findBoardByBoardId(boardId);
+        if (!encryptedPassword.equals(board.getPassword())) throw new IllegalArgumentException(PASSWORD_ERROR_DELETE);
+        boardMapper.deleteBoardByBoardId(boardId);
+    }
+
     /**
      * Board 객체를 이용해 BoardDetailDTO 객체를 생성해 리턴한다.
+     *
      * @param board
      * @return
      */
@@ -76,20 +97,8 @@ public class BoardService {
     }
 
     /**
-     * Board 객체를 이용해 BoardDetailDTO 객체의 Comments, FileNames, Category 속성의 값을 주입한다.
-     * @param board
-     * @param boardDetailDTO
-     */
-    private void addCommentsAndFilesAndCategoryToBoardDetailDTO(Board board, BoardDTO.BoardDetailDTO boardDetailDTO) {
-        List<Comment> comments = commentMapper.findCommentsByBoardId(board.getBoardId());
-        List<File> files = fileMapper.findFilesByBoardId(board.getBoardId());
-        Category category = boardMapper.findCategoryByCategoryId(board.getCategoryId());
-
-        boardDetailDTO.assembleCategoryAndCommentsAndFileNames(category.getName(), transformCommentIntoCommentDetailDTO(comments), extractFileNamesFromFiles(files));
-    }
-
-    /**
      * File List에서 RealName만 추출해 List로 리턴한다.
+     *
      * @param files
      * @return
      */
@@ -102,6 +111,7 @@ public class BoardService {
 
     /**
      * Comment List를 CommentDetailDTO List로 만들어 리턴한다.
+     *
      * @param comments
      * @return
      */
@@ -114,6 +124,7 @@ public class BoardService {
 
     /**
      * CategoryList에서 Name값들을 모아 List로 만들어 리턴한다.
+     *
      * @param categories
      * @return
      */
@@ -124,6 +135,7 @@ public class BoardService {
 
     /**
      * BoardList에서 Id값들을 모아 List로 만들어 리턴한다.
+     *
      * @param boards
      * @return
      */
@@ -181,6 +193,7 @@ public class BoardService {
 
     /**
      * FileList에 board_id와 board의 id값이 같다면 true를 리턴한다.
+     *
      * @param board
      * @param files
      * @return

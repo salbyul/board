@@ -50,4 +50,10 @@ public interface BoardMapper {
      * @param boardId
      */
     void plusOneViews(Long boardId);
+
+    /**
+     * board_id로 Board를 찾은 후 DB에서 제거한다.
+     * @param BoardId
+     */
+    void deleteBoardByBoardId(Long BoardId);
 }

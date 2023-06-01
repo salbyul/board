@@ -89,4 +89,8 @@
         SET views = views + 1
         WHERE board_id = #{boardId}
     </update>
+
+    <delete id="deleteBoardByBoardId">
+        DELETE FROM board WHERE board_id = #{board_id}
+    </delete>
 </mapper>

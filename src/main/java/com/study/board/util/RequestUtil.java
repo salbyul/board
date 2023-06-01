@@ -84,6 +84,24 @@ public class RequestUtil {
     }
 
     /**
+     * path를 받아 startDate, endDate, category, search 파라미터를 붙여서 리턴한다.
+     * @param path
+     * @return
+     */
+    public String assembleParameter(String path) {
+        return path + "?start_date=" + getStartDate() + "&end_date=" + getEndDate() + "&category=" + getCategory() + "&search=" + getSearch();
+    }
+
+    /**
+     * path를 받아 startDate, endDate, category, search, i 파라미터를 붙여서 리턴한다.
+     * @param path
+     * @return
+     */
+    public String assembleParameterWithIndex(String path) {
+        return assembleParameter(path) + "&i=" + request.getParameter("i");
+    }
+
+    /**
      * NNNN-NN-NN 형식의 String을 받아 LocalDate객체로 변환 후 리턴한다.
      * @param date
      * @return

@@ -21,4 +21,11 @@ public interface FileMapper {
      * @return
      */
     List<File> findFilesByBoardId(Long boardId);
+
+    /**
+     * File의 realName을 이용해 File을 찾아 리턴한다.
+     * @param realName
+     * @return
+     */
+    File findFileByRealName(String realName);
 }
