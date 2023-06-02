@@ -1,6 +1,7 @@
 package com.study.board.controller;
 
 import com.study.board.dto.SearchCondition;
+import com.study.board.response.BoardCreateResponse;
 import com.study.board.service.BoardService;
 import com.study.board.service.FileService;
 import com.study.board.util.RequestUtil;
@@ -11,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 import static com.study.board.dto.BoardDTO.*;
 
@@ -88,27 +91,68 @@ public class BoardController {
      * @throws IOException
      */
     @PostMapping("/delete")
-    public String deleteBoard(HttpServletRequest request, HttpServletResponse response, @RequestParam("i") Long boardId, @RequestParam String password) throws NoSuchAlgorithmException, IOException {
+    public void deleteBoard(HttpServletRequest request, HttpServletResponse response, @RequestParam("i") Long boardId, @RequestParam String password) throws NoSuchAlgorithmException, IOException {
         boardService.deleteBoard(boardId, password);
-        redirect(request, response, "/");
-        return null;
+        String path = generatePath(request, "/");
+        response.sendRedirect(path);
     }
 
     /**
-     * 검색조건을 파라미터로 붙여 해당 주소로 리다이렉트한다.
+     * 게시글 생성 페이지 접속 시 실행된다.
+     * 만일 게시글 생성 유효성 검사에 실패 시 boardFailedCreationDTO를 생성해 기존에 입력한 값을 그대로 돌려준다.
      *
-     * @param request
+     * @param model
+     * @param boardFailedCreationDTO
+     * @return
+     */
+    @GetMapping("/create")
+    public String createBoardPage(Model model, BoardFailedCreationDTO boardFailedCreationDTO) {
+        BoardCreateResponse boardCreateResponse = boardService.getBoardCreateResponse(boardFailedCreationDTO);
+        model.addAttribute("boardResponse", boardCreateResponse);
+        return "create";
+    }
+
+    /**
+     * BoardCreationDTO를 받아 게시글을 DB에, MultipartFile List를 받아 DB에 저장한 후 해당 게시글로 리다이렉트한다.
+     *
      * @param response
+     * @param files
+     * @param boardCreationDTO
+     * @throws NoSuchAlgorithmException
      * @throws IOException
      */
-    private void redirect(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
-        RequestUtil requestUtil = new RequestUtil(request);
-        String redirectPath = requestUtil.assembleParameter(path);
-        response.sendRedirect(redirectPath);
+    @PostMapping("/create")
+    public void createBoard(HttpServletResponse response, @RequestParam("file") List<MultipartFile> files, BoardCreationDTO boardCreationDTO) throws NoSuchAlgorithmException, IOException {
+        Long boardId = boardService.createBoard(boardCreationDTO, files);
+        String path = getDetailPath(boardId);
+        response.sendRedirect(path);
     }
 
     /**
-     * 실제로 파일전송을 시작한다.
+     * 게시글을 생성할 경우 해당 게시글로 리다이렉트하기 위한 경로를 생성하는 메소드
+     * 검색조건을 붙이지 않는다.
+     *
+     * @param boardId
+     * @return
+     */
+    private String getDetailPath(Long boardId) {
+        return "/detail?&i=" + boardId;
+    }
+
+    /**
+     * 경로를 파라미터로 받아 검색조건을 쿼리 스트링으로 붙인 후 String 값으로 반환한다.
+     *
+     * @param request
+     * @param path
+     * @return
+     */
+    private String generatePath(HttpServletRequest request, String path) {
+        RequestUtil requestUtil = new RequestUtil(request);
+        return requestUtil.assembleParameter(path);
+    }
+
+    /**
+     * 파일전송을 시작한다.
      *
      * @param response
      * @param fileByte

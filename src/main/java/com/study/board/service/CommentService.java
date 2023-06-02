@@ -15,6 +15,7 @@ public class CommentService {
 
     /**
      * CommentSaveDTO 객체를 받아 DB에 저장한다.
+     *
      * @param commentSaveDTO
      */
     public void save(CommentDTO.CommentSaveDTO commentSaveDTO, Long boardId) {

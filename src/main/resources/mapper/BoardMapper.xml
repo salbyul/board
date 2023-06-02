@@ -28,7 +28,7 @@
                 </if>
             </if>
         </where>
-        ORDER BY created_date DESC
+        ORDER BY board_id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
@@ -91,6 +91,19 @@
     </update>
 
     <delete id="deleteBoardByBoardId">
-        DELETE FROM board WHERE board_id = #{board_id}
+        DELETE
+        FROM board
+        WHERE board_id = #{board_id}
     </delete>
+
+    <insert id="save" useGeneratedKeys="true" keyProperty="boardId">
+        INSERT INTO board (category_id, writer, password, title, content, views, created_date)
+        VALUES (#{categoryId}, #{writer}, #{password}, #{title}, #{content}, #{views}, #{generationTimestamp});
+    </insert>
+
+    <select id="findCategoryByCategoryName" resultType="Category">
+        SELECT category_id AS categoryId, name
+        FROM category
+        WHERE name = #{categoryName};
+    </select>
 </mapper>

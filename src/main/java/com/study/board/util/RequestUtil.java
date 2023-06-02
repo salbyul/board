@@ -13,19 +13,22 @@ public class RequestUtil {
 
     private final HttpServletRequest request;
 
+    //    검색 조건 파라미터
     private final String START_DATE = "start_date";
     private final String END_DATE = "end_date";
     private final String CATEGORY = "category";
     private final String SEARCH = "search";
     private final String PAGE = "page";
 
+    //    검색 조건 기본 값
     private final int OFFSET_DEFAULT_VALUE = 0;
-    private final LocalDate START_DATE_DEFAULT_VALUE = LocalDate.now().minusYears(1);
-    private final LocalDate END_DATE_DEFAULT_VALUE = LocalDate.now();
+    private final LocalDate START_DATE_DEFAULT_VALUE = LocalDate.now().minusYears(1L);
+    private final LocalDate END_DATE_DEFAULT_VALUE = LocalDate.now().plusDays(1L);
 
     /**
      * HttpServletRequest의 파라미터 중 'page' key값을 찾아내어 value값을 리턴한다.
      * 기본값은 0이다.
+     *
      * @return
      */
     public Integer getOffset() {
@@ -40,6 +43,7 @@ public class RequestUtil {
     /**
      * HttpServletRequest의 파라미터 중 'start_date' key값을 찾아내어 LocalDate 객체로 변환 후 리턴한다.
      * 기본 값은 현재로부터 1년 전의 날짜이다.
+     *
      * @return
      */
     public LocalDate getStartDate() {
@@ -54,6 +58,7 @@ public class RequestUtil {
     /**
      * HttpServletRequest의 파라미터 중 'end' key값을 찾아내어 value값을 리턴한다.
      * 기본 값은 현재 날짜이다.
+     *
      * @return
      */
     public LocalDate getEndDate() {
@@ -67,6 +72,7 @@ public class RequestUtil {
 
     /**
      * HttpServletRequest의 파라미터 중 'category' key값을 찾아내어 value값을 리턴한다.
+     *
      * @return
      */
     public String getCategory() {
@@ -77,6 +83,7 @@ public class RequestUtil {
 
     /**
      * HttpServletRequest의 파라미터 중 'search' key값을 찾아내어 value값을 리턴한다.
+     *
      * @return
      */
     public String getSearch() {
@@ -85,6 +92,7 @@ public class RequestUtil {
 
     /**
      * path를 받아 startDate, endDate, category, search 파라미터를 붙여서 리턴한다.
+     *
      * @param path
      * @return
      */
@@ -94,6 +102,7 @@ public class RequestUtil {
 
     /**
      * path를 받아 startDate, endDate, category, search, i 파라미터를 붙여서 리턴한다.
+     *
      * @param path
      * @return
      */
@@ -103,6 +112,7 @@ public class RequestUtil {
 
     /**
      * NNNN-NN-NN 형식의 String을 받아 LocalDate객체로 변환 후 리턴한다.
+     *
      * @param date
      * @return
      */
@@ -116,6 +126,7 @@ public class RequestUtil {
 
     /**
      * Category가 null이거나 빈 문자열이면 false를 리턴한다.
+     *
      * @param category
      * @return
      */

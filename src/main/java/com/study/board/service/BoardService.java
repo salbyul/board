@@ -1,33 +1,45 @@
 package com.study.board.service;
 
 import com.study.board.SHA256Encoder;
-import com.study.board.controller.BoardControllerAdvice;
 import com.study.board.domain.Board;
 import com.study.board.domain.Category;
 import com.study.board.domain.Comment;
 import com.study.board.domain.File;
-import com.study.board.dto.BoardDTO;
 import com.study.board.dto.CommentDTO;
+import com.study.board.dto.FileSaveDTO;
 import com.study.board.dto.SearchCondition;
 import com.study.board.mapper.BoardMapper;
 import com.study.board.mapper.CommentMapper;
 import com.study.board.mapper.FileMapper;
+import com.study.board.response.BoardCreateResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.study.board.controller.BoardControllerAdvice.*;
+import static com.study.board.domain.Board.*;
+import static com.study.board.dto.BoardDTO.*;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class BoardService {
+
+    //    파일 저장 경로
+    @Value("${file.dir}")
+    private String PATH;
 
     private final BoardMapper boardMapper;
     private final FileMapper fileMapper;
@@ -35,22 +47,20 @@ public class BoardService {
     private final CommentMapper commentMapper;
     private final SHA256Encoder sha256Encoder;
 
-//    TODO file 유무 확인 로직 추가해야 함
-
     /**
      * 검색조건을 이용해 BoardListDTO를 만들어 리턴한다.
      *
      * @param searchCondition
      * @return
      */
-    public BoardDTO.BoardListDTO getBoardListDTO(SearchCondition searchCondition) {
+    public BoardListDTO getBoardListDTO(SearchCondition searchCondition) {
         List<Board> boards = boardMapper.findBoardByPaging(searchCondition);
         List<Category> categories = boardMapper.findAllCategory();
         Integer boardCounts = boardMapper.countByPaging(searchCondition);
 
-//        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = transformBoardListIntoBoardSmallList(boardList, categoryList, getFileListByBoardIdList(getBoardIdList(boardList)));
-        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = transformBoardListIntoBoardSmallList(boards, categories);
-        return new BoardDTO.BoardListDTO(boardSmallDTOs, getCategoryNameList(categories), boardCounts);
+        List<BoardSmallDTO> boardSmallDTOs = transformBoardListIntoBoardSmallList(boards, categories);
+        setHasFileToBoardSmallDTOs(boards, boardSmallDTOs);
+        return new BoardListDTO(boardSmallDTOs, getCategoryNameList(categories), boardCounts);
     }
 
     /**
@@ -59,9 +69,9 @@ public class BoardService {
      * @param boardId
      * @return
      */
-    public BoardDTO.BoardDetailDTO getBoardDetailDTO(Long boardId) {
+    public BoardDetailDTO getBoardDetailDTO(Long boardId) {
         Board board = boardMapper.findBoardByBoardId(boardId);
-        BoardDTO.BoardDetailDTO boardDetailDTO = transformBoardIntoBoardDetailDTO(board);
+        BoardDetailDTO boardDetailDTO = transformBoardIntoBoardDetailDTO(board);
 
         List<Comment> comments = commentMapper.findCommentsByBoardId(boardId);
         List<File> files = fileMapper.findFilesByBoardId(boardId);
@@ -79,6 +89,13 @@ public class BoardService {
         boardMapper.plusOneViews(boardId);
     }
 
+    /**
+     * DB에 있는 비밀번호와 비교 후 같으면 해당 Board를 DB에서 제거하고, 같지 않으면 IllegalArgumentException을 던진다.
+     *
+     * @param boardId
+     * @param password
+     * @throws NoSuchAlgorithmException
+     */
     public void deleteBoard(Long boardId, String password) throws NoSuchAlgorithmException {
         String encryptedPassword = sha256Encoder.encrypt(password);
         Board board = boardMapper.findBoardByBoardId(boardId);
@@ -87,13 +104,235 @@ public class BoardService {
     }
 
     /**
+     * BoardFailedCreationDTO 객체를 이용해 BoardCreateResponse 객체를 생성해 리턴한다.
+     *
+     * @param boardFailedCreationDTO
+     * @return
+     */
+    public BoardCreateResponse getBoardCreateResponse(BoardFailedCreationDTO boardFailedCreationDTO) {
+        List<String> categoryNames = getCategoryNameList(boardMapper.findAllCategory());
+        return new BoardCreateResponse(boardFailedCreationDTO, categoryNames);
+    }
+
+    /**
+     * boardCreationDTO 객체의 유효성 검사를 한 후 DB에 저장한다.
+     * 그 후 파일을 로컬과 DB에 저장한다.
+     * 저장된 Board의 Primary Key를 리턴한다.
+     *
+     * @param boardCreationDTO
+     * @param files
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    public Long createBoard(BoardCreationDTO boardCreationDTO, List<MultipartFile> files) throws NoSuchAlgorithmException, IOException {
+        validateBoardCreationDTO(boardCreationDTO);
+        BoardSaveDTO boardSaveDTO = saveBoard(boardCreationDTO);
+        fileSave(files, boardSaveDTO);
+        return boardSaveDTO.getBoardId();
+    }
+
+    /**
+     * Board가 File을 가지고 있으면 BoardSmallDTO의 hasFile 속성을 true로 바꾼다.
+     *
+     * @param boards
+     * @param boardSmallDTOs
+     */
+    private void setHasFileToBoardSmallDTOs(List<Board> boards, List<BoardSmallDTO> boardSmallDTOs) {
+        List<Long> boardIds = getBoardIdList(boards);
+        List<Long> boardIdLinkedFile = getFileListByBoardIdList(boardIds);
+
+        while (!boardIdLinkedFile.isEmpty()) {
+            for (Long id : boardIdLinkedFile) {
+                if (boardHasFile(id, boardSmallDTOs)) {
+                    boardIdLinkedFile.remove(id);
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Board가 파일을 가지고 있으면 board의 hasfile 필드를 true로 바꾸고 true를 리턴한다.
+     * 없으면 false를 리턴한다.
+     *
+     * @param id
+     * @param boardSmallDTOs
+     * @return
+     */
+    private boolean boardHasFile(Long id, List<BoardSmallDTO> boardSmallDTOs) {
+        for (BoardSmallDTO boardSmallDTO : boardSmallDTOs) {
+            if (boardSmallDTO.getBoardId().equals(id)) {
+                boardSmallDTO.setHasFile(true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * BoardCreationDTO의 비밀번호를 SHA256 알고리즘을 이용해 암호화한다.
+     * Board를 DB에 저장한다.
+     * 그 후 저장된 Board의 Primary Key를 리턴한다.
+     *
+     * @param boardCreationDTO
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
+    private BoardSaveDTO saveBoard(BoardCreationDTO boardCreationDTO) throws NoSuchAlgorithmException {
+        Category category = boardMapper.findCategoryByCategoryName(boardCreationDTO.getCategory());
+
+        boardCreationDTO.encryptPassword(sha256Encoder);
+        BoardSaveDTO boardSaveDTO = BoardSaveDTO.transformBoardCreationDTOIntoBoardSaveDTO(boardCreationDTO, category.getCategoryId());
+        boardMapper.save(boardSaveDTO);
+        return boardSaveDTO;
+    }
+
+    /**
+     * 로컬에 파일을 저장하고 DB에 저장한다.
+     *
+     * @param files
+     * @param boardSaveDTO
+     * @throws IOException
+     */
+    private void fileSave(List<MultipartFile> files, BoardSaveDTO boardSaveDTO) throws IOException {
+        for (MultipartFile file : files) {
+//            파일 이름이 null인 경우 확인
+            if (isFileNameExist(file)) {
+                String renamedFile = fileRename(file.getOriginalFilename());
+                saveToLocal(file, renamedFile);
+                FileSaveDTO fileSaveDTO = new FileSaveDTO(renamedFile, file.getOriginalFilename(), boardSaveDTO.getBoardId());
+                fileMapper.save(fileSaveDTO);
+            }
+        }
+    }
+
+    /**
+     * 로컬에 파일을 저장한다.
+     *
+     * @param file
+     * @param renamedFile
+     * @throws IOException
+     */
+    private void saveToLocal(MultipartFile file, String renamedFile) throws IOException {
+        file.transferTo(new java.io.File(PATH + renamedFile));
+    }
+
+    /**
+     * 파일이 존재하는지 확인한다.
+     *
+     * @param file
+     * @return
+     */
+    private boolean isFileNameExist(MultipartFile file) {
+        return file.getOriginalFilename() != null;
+    }
+
+    /**
+     * File의 이름을 바꾸는 메소드
+     * UUID + 현재 날짜 + 오리지널 이름 으로 만든 후 리턴한다.
+     *
+     * @param fileName
+     * @return
+     */
+    private String fileRename(String fileName) {
+        String body;
+        String ext;
+        int dot = fileName.lastIndexOf(".");
+        if (dot != -1) {
+            body = fileName.substring(0, dot);
+            ext = fileName.substring(dot);
+        } else {
+            body = fileName;
+            ext = "";
+        }
+
+        UUID uuid = UUID.randomUUID();
+        LocalDateTime now = LocalDateTime.now();
+        return uuid.toString() + now + "[" + body + "]" + ext;
+    }
+
+    /**
+     * BoardCreationDTO 객체의 값들의 유효성 검사를 한다.
+     *
+     * @param boardCreationDTO
+     */
+    private void validateBoardCreationDTO(BoardCreationDTO boardCreationDTO) {
+        validateWriter(boardCreationDTO.getWriter());
+        validatePassword(boardCreationDTO.getPassword());
+        validateTitle(boardCreationDTO.getTitle());
+        validateContent(boardCreationDTO.getContent());
+    }
+
+    /**
+     * 작성자 값의 유효성 검사를 한다.
+     *
+     * @param writer
+     */
+    private void validateWriter(String writer) {
+        if (writer == null || (writer.length() < 3 || writer.length() >= 5)) {
+            log.error("WRITER VALIDATION FAILED");
+            throw new IllegalArgumentException(WRITER_ERROR);
+        }
+    }
+
+    /**
+     * 비밀번호 값의 유효성 검사를 한다.
+     *
+     * @param password
+     */
+    private void validatePassword(String password) {
+        if (password != null) {
+            validatePasswordPattern(password);
+        }
+    }
+
+    /**
+     * 제목 값의 유효성 검사를 한다.
+     *
+     * @param title
+     */
+    private void validateTitle(String title) {
+        if (title == null || (title.length() < 4 || title.length() >= 100)) {
+            log.error("TITLE VALIDATION FAILED");
+            throw new IllegalArgumentException(TITLE_ERROR);
+        }
+    }
+
+    /**
+     * 내용 값의 유효성 검사를 한다.
+     *
+     * @param content
+     */
+    private void validateContent(String content) {
+        if (content == null || (content.length() < 4 || content.length() >= 2000)) {
+            log.error("CONTENT VALIDATION FAILED");
+            throw new IllegalArgumentException(CONTENT_ERROR);
+        }
+    }
+
+    /**
+     * 비밀번호 값이 영문, 숫자, 특수문자를 포함한 4글자 이상 16글자 미만의 값인지 유효성 검사를 한다.
+     *
+     * @param password
+     */
+    private void validatePasswordPattern(String password) {
+        Pattern pattern = Pattern.compile("^(?=.*[a-zA-Z])(?=.*\\d)(?=.*\\W).{4,16}$");
+        Matcher matcher = pattern.matcher(password);
+        if (!matcher.find()) {
+            log.error("PASSWORD VALIDATION FAILED");
+            throw new IllegalArgumentException(PASSWORD_ERROR);
+        }
+    }
+
+
+    /**
      * Board 객체를 이용해 BoardDetailDTO 객체를 생성해 리턴한다.
      *
      * @param board
      * @return
      */
-    private BoardDTO.BoardDetailDTO transformBoardIntoBoardDetailDTO(Board board) {
-        return modelMapper.map(board, BoardDTO.BoardDetailDTO.class);
+    private BoardDetailDTO transformBoardIntoBoardDetailDTO(Board board) {
+        return modelMapper.map(board, BoardDetailDTO.class);
     }
 
     /**
@@ -146,29 +385,15 @@ public class BoardService {
 
     /**
      * Board 객체를 이용해 BoardSmallDTO 객체를 생성한다.
-     * 그후 카테고리를 주입한다.
-     * FileList에 파일이 해당 Board의 파일이 존재한다면 hasFile을 변경한다.
+     * 그 후 카테고리를 주입한다.
      *
      * @param boards
      * @param categories
-     * @param files
      * @return
      */
-    private List<BoardDTO.BoardSmallDTO> transformBoardListIntoBoardSmallList(List<Board> boards, List<Category> categories, List<File> files) {
-        List<BoardDTO.BoardSmallDTO> boardSmallDTOs = new ArrayList<>();
-
-        for (Board board : boards) {
-            BoardDTO.BoardSmallDTO boardSmall = modelMapper.map(board, BoardDTO.BoardSmallDTO.class);
-            boardSmall.setCategory(findCategoryById(categories, board));
-            boardSmall.setHasFile(hasFile(files, board));
-            boardSmallDTOs.add(boardSmall);
-        }
-        return boardSmallDTOs;
-    }
-
-    private List<BoardDTO.BoardSmallDTO> transformBoardListIntoBoardSmallList(List<Board> boards, List<Category> categories) {
+    private List<BoardSmallDTO> transformBoardListIntoBoardSmallList(List<Board> boards, List<Category> categories) {
         return boards.stream().map(board -> {
-            BoardDTO.BoardSmallDTO boardSmall = modelMapper.map(board, BoardDTO.BoardSmallDTO.class);
+            BoardSmallDTO boardSmall = modelMapper.map(board, BoardSmallDTO.class);
             boardSmall.setCategory(findCategoryById(categories, board));
             return boardSmall;
         }).collect(Collectors.toList());
@@ -192,28 +417,12 @@ public class BoardService {
     }
 
     /**
-     * FileList에 board_id와 board의 id값이 같다면 true를 리턴한다.
-     *
-     * @param board
-     * @param files
-     * @return
-     */
-    private boolean hasFile(List<File> files, Board board) {
-        for (File file : files) {
-            if (board.getBoardId().equals(file.getBoardId())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * board_id가 담긴 List를 이용해 FileList를 리턴한다.
+     * board_id가 담긴 List를 이용해 File 테이블에 존재하는 중복이 없는 board_id List를 리턴한다.
      *
      * @param boardId
      * @return
      */
-    private List<File> getFileListByBoardIdList(List<Long> boardId) {
-        return fileMapper.findFilesByBoardIds(boardId);
+    private List<Long> getFileListByBoardIdList(List<Long> boardId) {
+        return fileMapper.findBoardIdsByBoardIds(boardId);
     }
 }

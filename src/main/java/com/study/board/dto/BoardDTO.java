@@ -1,7 +1,9 @@
 package com.study.board.dto;
 
+import com.study.board.SHA256Encoder;
 import lombok.*;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,7 +29,6 @@ public abstract class BoardDTO {
      */
     @Getter
     @Setter
-    @NoArgsConstructor
     public static class BoardSmallDTO extends BoardDTO {
         private Long boardId;
         private String category;
@@ -47,9 +48,11 @@ public abstract class BoardDTO {
         }
     }
 
+    /**
+     * 디테일 페이지에 표현할 정보들을 담은 객체
+     */
     @Getter
     @Setter
-    @NoArgsConstructor
     public static class BoardDetailDTO extends BoardDTO {
         private String category;
         private String title;
@@ -66,5 +69,58 @@ public abstract class BoardDTO {
             this.commentDetailDTOs = commentDetailDTOs;
             this.fileNames = fileNames;
         }
+    }
+
+    /**
+     * 게시글 생성 시 입력한 값들이 담긴 객체
+     */
+    @Getter
+    @Setter
+    public static class BoardCreationDTO extends BoardDTO {
+        private String category;
+        private String writer;
+        private String password;
+        private String title;
+        private String content;
+
+        public void encryptPassword(SHA256Encoder encoder) throws NoSuchAlgorithmException {
+            this.password = encoder.encrypt(password);
+        }
+    }
+
+    @Getter
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class BoardSaveDTO extends BoardDTO {
+        private Long boardId;
+        private Long categoryId;
+        private String writer;
+        private String password;
+        private String title;
+        private String content;
+        private Integer views;
+        private LocalDateTime generationTimestamp;
+
+        /**
+         * boardCreationDTO를 이용해 BoardSaveDTO를 생성해 리턴한다.
+         *
+         * @param boardCreationDTO
+         * @param categoryId
+         * @return
+         */
+        public static BoardSaveDTO transformBoardCreationDTOIntoBoardSaveDTO(BoardCreationDTO boardCreationDTO, Long categoryId) {
+            return new BoardSaveDTO(null, categoryId, boardCreationDTO.getWriter(), boardCreationDTO.getPassword(), boardCreationDTO.getTitle(), boardCreationDTO.getContent(), 0, LocalDateTime.now());
+        }
+    }
+
+    /**
+     * 게시글 생성 시 유효성 검사에 실패한 경우 기존에 입력한 값들을 담은 객체
+     */
+    @Getter
+    @Setter
+    public static class BoardFailedCreationDTO extends BoardDTO {
+        private String category;
+        private String writer;
+        private String title;
+        private String content;
     }
 }

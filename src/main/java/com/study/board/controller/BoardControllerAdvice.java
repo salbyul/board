@@ -62,9 +62,8 @@ public class BoardControllerAdvice {
         return "505";
     }
 
-//    TODO Clean Code
     /**
-     * 파라미터로 들어온 errorCode를 포함시켜 해당 주소로 리다이렉트를 한다.
+     * RequestUtil을 이용해 경로를 만든 후 해당 경로로 리다이렉트한다.
      *
      * @param request
      * @param response
@@ -72,12 +71,6 @@ public class BoardControllerAdvice {
      * @param errorCode
      * @throws IOException
      */
-    private void redirect(HttpServletRequest request, HttpServletResponse response, String path, String errorCode) throws IOException {
-        RequestUtil requestUtil = new RequestUtil(request);
-        String redirectPath = requestUtil.assembleParameter(path);
-        response.sendRedirect(addErrorCode(redirectPath, errorCode));
-    }
-
     private void redirectWithIndex(HttpServletRequest request, HttpServletResponse response, String path, String errorCode) throws IOException {
         RequestUtil requestUtil = new RequestUtil(request);
         String redirectPath = requestUtil.assembleParameterWithIndex(path);

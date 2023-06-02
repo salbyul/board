@@ -14,13 +14,16 @@ public abstract class CommentDTO {
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class CommentDetailDTO extends CommentDTO{
+    public static class CommentDetailDTO extends CommentDTO {
 
         private String writer;
         private String content;
         private LocalDateTime generationTimestamp;
     }
 
+    /**
+     * 댓글을 저장하기 위한 값을 담은 객체
+     */
     @Getter
     @Setter
     @NoArgsConstructor

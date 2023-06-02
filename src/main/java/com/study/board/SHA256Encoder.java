@@ -6,7 +6,8 @@ import java.security.NoSuchAlgorithmException;
 public class SHA256Encoder {
 
     /**
-     * SHA-256 알고리즘으로 String 값을 변경한다.
+     * 파라미터로 들어온 String 값을 암호화하여 리턴한다.
+     *
      * @param string
      * @return
      * @throws NoSuchAlgorithmException
@@ -17,7 +18,7 @@ public class SHA256Encoder {
         return bytesToHex(md.digest());
     }
 
-//    TODO 이해 필요
+    //    TODO 이해 필요
     private String bytesToHex(byte[] bytes) {
         StringBuilder stringBuilder = new StringBuilder();
         for (byte b : bytes) {

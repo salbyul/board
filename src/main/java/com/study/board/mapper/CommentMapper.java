@@ -11,6 +11,7 @@ public interface CommentMapper {
 
     /**
      * Board의 primary key를 이용해 Comment 객체들을 List에 담아 리턴한다.
+     *
      * @param boardId
      * @return
      */
@@ -18,6 +19,7 @@ public interface CommentMapper {
 
     /**
      * CommentSaveDTO를 이용해 Comment를 저장한다.
+     *
      * @param commentSaveDTO
      */
     void save(CommentDTO.CommentSaveDTO commentSaveDTO, Long boardId);

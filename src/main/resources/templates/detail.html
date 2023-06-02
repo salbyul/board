@@ -100,7 +100,9 @@
 <!--삭제-->
 <div class="border fixed z-10 w-3/12 text-center top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 shadow-md bg-gray-50 invisible"
      id="delete_popup">
-    <form method="post" th:action="@{/delete(i=${param.i}, start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}" id="deletedForm">
+    <form method="post"
+          th:action="@{/delete(i=${param.i}, start_date=${param.startDate}, end_date=${param.endDate}, category=${param.category}, search=${param.search})}"
+          id="deletedForm">
         <h1 class="my-10">비밀번호 입력</h1>
         <input type="password" placeholder="비밀번호를 입력해 주세요." class="pl-1 border w-5/12" name="password"/>
         <br/>
